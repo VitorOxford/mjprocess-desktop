@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Capture Window</title>
+</head>
+<body>
+    <script>
+        // Este script será executado no contexto da janela de renderização
+        // Ele depende das APIs expostas pelo captureWindow-preload.js
+
+        if (window.electronCaptureAPI && typeof window.electronCaptureAPI.onCaptureScreenRequest === 'function') {
+
+            window.electronCaptureAPI.onCaptureScreenRequest(async (event, sourceId) => {
+                console.log('[Capture Renderer] Recebido pedido para capturar sourceId:', sourceId);
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        audio: false,
+                        video: {
+                            mandatory: {
+                                chromeMediaSource: 'desktop',
+                                chromeMediaSourceId: sourceId,
+                                // Você pode adicionar min/maxWidth/Height aqui para tentar controlar a resolução
+                                // maxWidth: 1920,
+                                // maxHeight: 1080
+                            }
+                        }
+                    });
+                    console.log('[Capture Renderer] Stream obtido.');
+
+                    const video = document.createElement('video');
+                    // video.style.display = 'none'; // Não precisa exibir
+                    document.body.appendChild(video); // Adicionar ao DOM pode ser necessário em alguns casos
+
+                    video.srcObject = stream;
+
+                    video.onloadedmetadata = () => {
+                        video.play().then(() => {
+                            console.log('[Capture Renderer] Metadados carregados, vídeo iniciado.');
+                            // Pequeno delay para garantir que o frame foi renderizado
+                            setTimeout(() => {
+                                const canvas = document.createElement('canvas');
+                                // Tenta usar as dimensões reais do vídeo se disponíveis
+                                canvas.width = video.videoWidth > 0 ? video.videoWidth : 1280; // Fallback
+                                canvas.height = video.videoHeight > 0 ? video.videoHeight : 720; // Fallback
+                                console.log(`[Capture Renderer] Capturando frame com dimensões: ${canvas.width}x${canvas.height}`);
+
+                                const context = canvas.getContext('2d');
+                                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                                // Qualidade da imagem JPEG (0.0 a 1.0). PNG ignora isso.
+                                const quality = 0.7; // Ajuste conforme necessário (menor = menor tamanho)
+                                const imageUrl = canvas.toDataURL('image/jpeg', quality); // Use 'image/png' para melhor qualidade
+                                console.log('[Capture Renderer] Imagem convertida para Data URL (JPEG Qualidade ' + quality + ')');
+
+                                // Limpeza
+                                stream.getTracks().forEach(track => track.stop());
+                                video.remove();
+                                canvas.remove();
+                                console.log('[Capture Renderer] Recursos limpos.');
+
+                                // Envia resultado de volta para o main process
+                                if (window.electronCaptureAPI && typeof window.electronCaptureAPI.sendScreenshotResult === 'function') {
+                                    window.electronCaptureAPI.sendScreenshotResult(imageUrl);
+                                } else {
+                                     console.error('[Capture Renderer] API sendScreenshotResult não encontrada no preload.');
+                                }
+
+                            }, 100); // Delay de 100ms
+
+                        }).catch(playError => {
+                             console.error('[Capture Renderer] Erro ao iniciar vídeo:', playError);
+                             stream.getTracks().forEach(track => track.stop());
+                             video.remove();
+                             if (window.electronCaptureAPI && typeof window.electronCaptureAPI.sendScreenshotResult === 'function') {
+                                 window.electronCaptureAPI.sendScreenshotResult(null, `Erro ao iniciar vídeo: ${playError.message}`);
+                             }
+                        });
+                    };
+
+                    video.onerror = (e) => {
+                         console.error('[Capture Renderer] Erro no elemento vídeo:', e);
+                         stream.getTracks().forEach(track => track.stop());
+                         video.remove();
+                          if (window.electronCaptureAPI && typeof window.electronCaptureAPI.sendScreenshotResult === 'function') {
+                                window.electronCaptureAPI.sendScreenshotResult(null, `Erro no elemento vídeo.`);
+                          }
+                    };
+
+                } catch (err) {
+                    console.error('[Capture Renderer] Erro em getUserMedia:', err);
+                     if (window.electronCaptureAPI && typeof window.electronCaptureAPI.sendScreenshotResult === 'function') {
+                        window.electronCaptureAPI.sendScreenshotResult(null, `Erro em getUserMedia: ${err.message}`);
+                     }
+                }
+            });
+            console.log('[Capture Renderer] Listener onCaptureScreenRequest pronto.');
+
+        } else {
+            console.error('[Capture Renderer] API onCaptureScreenRequest não encontrada no preload.');
+        }
+
+    </script>
+</body>
+</html>

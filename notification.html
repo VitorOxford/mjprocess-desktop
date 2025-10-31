@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Notificação</title>
+    <style>
+        :root {
+            /* Define as variáveis de cor */
+            --bg-color: rgba(255, 255, 255, 0.25);
+            --border-color: rgba(255, 255, 255, 0.4);
+            --shadow-color: rgba(0, 0, 0, 0.2);
+            --text-primary: #000000;
+            --text-secondary: #333333;
+            --button-bg: rgba(0, 0, 0, 0.1);
+            --button-hover-bg: rgba(0, 0, 0, 0.2);
+        }
+
+        body[data-theme="dark"] {
+            --bg-color: rgba(20, 20, 20, 0.35);
+            --border-color: rgba(255, 255, 255, 0.2);
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --text-primary: #FFFFFF;
+            --text-secondary: #CCCCCC;
+            --button-bg: rgba(255, 255, 255, 0.1);
+            --button-hover-bg: rgba(255, 255, 255, 0.2);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(110%); }
+            to { transform: translateX(0); }
+        }
+
+        html, body { background-color: transparent; }
+        body {
+            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            animation: slideIn 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        .notification-container {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border-radius: 12px;
+            gap: 16px;
+
+            background-color: var(--bg-color);
+            backdrop-filter: blur(16px) saturate(120%);
+            -webkit-backdrop-filter: blur(16px) saturate(120%);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 32px 0 var(--shadow-color);
+        }
+
+        .icon {
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
+        }
+
+        .content {
+            flex-grow: 1;
+        }
+
+        .title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 0 4px 0;
+        }
+
+        .body {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+        
+        #ok-button {
+            background-color: var(--button-bg);
+            color: var(--text-primary);
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+            transition: background-color 0.2s ease;
+        }
+
+        #ok-button:hover {
+            background-color: var(--button-hover-bg);
+        }
+    </style>
+</head>
+<body data-theme="light"> <div class="notification-container">
+        <img class="icon" src="build/logo.png" alt="MJ Process Logo">
+        
+        <div class="content">
+            <p class="title">Acesso Bloqueado</p>
+            <p class="body" id="notification-body">O site acessado foi restringido.</p>
+        </div>
+
+        <button id="ok-button">OK</button>
+    </div>
+
+    <script>
+        document.getElementById('ok-button').addEventListener('click', () => {
+            window.electronAPI.closeNotification();
+        });
+
+        window.electronAPI.onSetData((event, data) => {
+            document.body.setAttribute('data-theme', data.theme);
+            document.getElementById('notification-body').textContent = `O acesso a "${data.title}" foi bloqueado.`; 
+        });
+    </script>
+</body>
+</html>

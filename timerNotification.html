@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Tempo Restante</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap');
+
+        :root {
+            --bg-color: rgba(31, 41, 55, 0.7); /* Azul acinzentado semi-transparente */
+            --border-color: rgba(255, 255, 255, 0.15);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db; /* Cinza mais claro */
+            --icon-color: #9ca3af;
+             --progress-bg: rgba(255, 255, 255, 0.1);
+            --progress-fill: #7c3aed; /* Roxo */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: transparent; /* Fundo transparente */
+            overflow: hidden;
+            border-radius: 12px; /* Aplica borda arredondada ao corpo para o container pegar */
+             animation: slideIn 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+             position: relative; /* Para posicionar o botão de fechar */
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(110%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+
+        .notification-container {
+            display: flex;
+            align-items: center;
+            padding: 14px 18px; /* Padding um pouco menor */
+            border-radius: 12px;
+            gap: 12px;
+            background-color: var(--bg-color);
+            backdrop-filter: blur(15px) saturate(180%);
+            -webkit-backdrop-filter: blur(15px) saturate(180%);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 6px 20px 0 var(--shadow-color);
+             position: relative;
+        }
+
+         .icon {
+            width: 28px; /* Ícone menor */
+            height: 28px;
+            flex-shrink: 0;
+            color: var(--icon-color);
+            opacity: 0.8;
+         }
+
+        .content {
+            flex-grow: 1;
+        }
+
+        .title {
+            font-size: 0.9em; /* Menor */
+            font-weight: 500;
+            color: var(--text-primary);
+            margin: 0 0 3px 0; /* Menos margem */
+        }
+
+        .body {
+            font-size: 0.85em; /* Menor */
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: none;
+            border: none;
+            color: var(--icon-color);
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+            font-size: 1.2em;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
+        }
+        .close-button:hover {
+            opacity: 1;
+        }
+
+         /* Barra de progresso (opcional, visual) */
+        .progress-bar {
+             position: absolute;
+             bottom: 0;
+             left: 0;
+             height: 3px; /* Altura fina */
+             width: 100%;
+             background-color: var(--progress-bg);
+             border-bottom-left-radius: 12px;
+             border-bottom-right-radius: 12px;
+             overflow: hidden; /* Garante que o preenchimento não saia */
+         }
+
+         .progress-bar-fill {
+             height: 100%;
+             background-color: var(--progress-fill);
+             width: 0%; /* Começa vazio */
+             transition: width 0.5s linear; /* Animação suave */
+             border-radius: 3px; /* Arredonda a ponta */
+         }
+
+    </style>
+</head>
+<body>
+    <div class="notification-container">
+        <!-- Ícone de Tempo (Material Design Icons) -->
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>timer-sand</title><path fill="currentColor" d="M6 2V8H6V8L10 12L6 16V16H6V22H18V16H18V16L14 12L18 8V8H18V2H6M16 16.5V20H8V16.5L12 12.5L16 16.5M12 11.5L8 7.5V4H16V7.5L12 11.5Z" /></svg>
+
+        <div class="content">
+            <p class="title">Tempo de Extensão</p>
+            <p class="body" id="notification-body">Calculando...</p>
+        </div>
+
+        <button class="close-button" id="close-button" title="Fechar">&times;</button>
+
+         <!-- Barra de progresso opcional -->
+         <div class="progress-bar">
+             <div class="progress-bar-fill" id="progress-fill"></div>
+         </div>
+    </div>
+
+    <script>
+        const bodyEl = document.getElementById('notification-body');
+        const progressFillEl = document.getElementById('progress-fill');
+        let totalDurationMs = 0; // Duração total em ms para a barra
+        let startTime = Date.now();
+
+        document.getElementById('close-button').addEventListener('click', () => {
+             if (window.electronAPI && typeof window.electronAPI.closeTimerNotification === 'function') {
+                window.electronAPI.closeTimerNotification();
+            }
+        });
+
+        // Recebe dados do preload
+         if (window.electronAPI && typeof window.electronAPI.onSetTimerData === 'function') {
+            window.electronAPI.onSetTimerData((event, data) => {
+                bodyEl.textContent = data.message;
+                 if (data.remainingMs && data.totalMs) {
+                    totalDurationMs = data.totalMs;
+                    startTime = Date.now() - (totalDurationMs - data.remainingMs); // Estima início
+                     updateProgressBar(data.remainingMs);
+                } else {
+                     progressFillEl.style.width = '0%'; // Sem progresso se não tiver dados
+                 }
+            });
+         } else {
+             console.error('API onSetTimerData não encontrada no preload.');
+             bodyEl.textContent = "Erro ao carregar dados.";
+         }
+
+         // Atualiza a barra de progresso (opcional)
+         function updateProgressBar(remainingMs) {
+             if (totalDurationMs > 0 && remainingMs >= 0) {
+                 const percentage = Math.max(0, (remainingMs / totalDurationMs) * 100);
+                 progressFillEl.style.width = `${percentage}%`;
+             } else {
+                 progressFillEl.style.width = '0%';
+             }
+         }
+
+         // Atualiza a barra a cada segundo (apenas visual, não afeta lógica principal)
+         const progressInterval = setInterval(() => {
+             if (totalDurationMs > 0) {
+                 const elapsed = Date.now() - startTime;
+                 const remaining = Math.max(0, totalDurationMs - elapsed);
+                 updateProgressBar(remaining);
+             }
+         }, 1000);
+
+         window.addEventListener('beforeunload', () => clearInterval(progressInterval));
+
+
+    </script>
+</body>
+</html>

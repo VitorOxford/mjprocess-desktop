@@ -1,0 +1,34 @@
+{
+  "name": "mjprocess-desktop",
+  "version": "1.0.0",
+  "description": "App Desktop MJ Process",
+  "main": "main.js",
+  "author": "Seu Nome",
+  "license": "ISC",
+  "scripts": {
+    "start": "electron . --log-net-log=net-log.json",
+    "dist": "electron-builder"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.76.1",
+    "active-win": "^8.2.1",
+    "sudo-prompt": "^9.2.1",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "electron": "^31.2.1",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.mjprocess.desktop",
+    "productName": "MJ Process",
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>MJ Process - Acesso Restrito</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+
+        :root {
+            --primary-color: #2b1cf5be; /* Roxo Vibrante */
+            --primary-color-light: rgba(124, 58, 237, 0.1);
+            --background-start: #111827; /* Azul escuro quase preto */
+            --background-end: #1f2937; /* Cinza azulado escuro */
+            --text-color-primary: #f9fafb; /* Branco acinzentado */
+            --text-color-secondary: #9ca3af; /* Cinza claro */
+            --card-background: rgba(31, 41, 55, 0.219); /* Fundo do card semi-transparente */
+            --card-border: rgba(255, 255, 255, 0.1);
+            --button-text-color: #ffffff;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --success-color: #22c55e;
+            --error-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #3b82f6;
+            --spinner-color: var(--primary-color);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--background-start), var(--background-end));
+            color: var(--text-color-primary);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            cursor: default;
+            text-align: center;
+        }
+
+        .lock-container {
+            background-color: var(--card-background);
+            border-radius: 20px;
+            box-shadow: 0 15px 40px var(--shadow-color);
+            padding: 45px 55px;
+            max-width: 580px;
+            width: 100%;
+            border: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            backdrop-filter: blur(20px) saturate(150%);
+            -webkit-backdrop-filter: blur(20px) saturate(150%);
+            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative; /* Para posicionar elementos absolutos se necessário */
+        }
+
+        @keyframes popIn {
+          from { opacity: 0; transform: scale(0.8); }
+          to { opacity: 1; transform: scale(1); }
+        }
+
+        .logo {
+            width: 100px; /* Tamanho fixo */
+            height: 100px;
+            margin-bottom: 25px;
+            opacity: 0.9;
+        }
+
+        h1 {
+            color: var(--text-color-primary); /* Branco para melhor contraste */
+            font-size: 2.4em;
+            margin-bottom: 15px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        p.info-text {
+            font-size: 1.1em;
+            line-height: 1.7;
+            margin-bottom: 40px;
+            color: var(--text-color-secondary);
+            max-width: 95%;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: var(--button-text-color);
+            border: none;
+            border-radius: 12px; /* Menos arredondado que antes */
+            padding: 14px 28px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            min-width: 140px;
+            letter-spacing: 0.3px;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #6d28d9; /* Roxo um pouco mais escuro */
+            transform: translateY(-2px);
+            box-shadow: 0 7px 15px rgba(0, 0, 0, 0.25);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        button:disabled {
+            background-color: rgba(27, 28, 29, 0.096); /* Cinza semi-transparente */
+            color: rgba(255,255,255,0.5);
+            cursor: not-allowed;
+            opacity: 0.7;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .status-container {
+            margin-top: 25px;
+            min-height: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .status-message {
+            font-size: 1em;
+            font-weight: 500;
+            transition: color 0.3s ease, opacity 0.3s ease;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        .countdown-message { /* Não usado nesta tela */
+            display: none;
+        }
+
+        .status-success { color: var(--success-color); }
+        .status-error { color: var(--error-color); }
+        .status-pending { color: var(--warning-color); }
+        .status-info { color: var(--info-color); }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.15);
+            border-left-color: var(--spinner-color);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+             display: none;
+             margin-top: 10px;
+        }
+        .spinner.visible { display: block; }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        * { -webkit-user-drag: none; user-select: none; -moz-user-select: none; -webkit-user-select: none; -ms-user-select: none; }
+        input, textarea, select { pointer-events: none; }
+
+    </style>
+</head>
+<body>
+    <div class="lock-container">
+        <img src="build/logo.png" alt="MJ Process Logo" class="logo"> <!-- Usando icon.png -->
+        <h1>Acesso Restrito</h1>
+        <p class="info-text">Seu horário de trabalho programado terminou. Para continuar, por favor, solicite uma extensão de tempo.</p>
+
+        <div class="button-group">
+            <button id="btn-10m" data-duration="10">Solicitar +10 min</button>
+            <button id="btn-30m" data-duration="30">Solicitar +30 min</button>
+            <button id="btn-60m" data-duration="60">Solicitar +1 hora</button>
+        </div>
+
+        <div class="status-container">
+            <div id="status-message" class="status-message"></div>
+            <div id="spinner" class="spinner"></div>
+        </div>
+    </div>
+
+    <!-- Script JavaScript mantido da versão anterior (sem countdown aqui) -->
+    <script>
+        const buttons = document.querySelectorAll('.button-group button');
+        const statusMessageEl = document.getElementById('status-message');
+        const spinnerEl = document.getElementById('spinner');
+        let requestPending = false;
+        let approvalCheckInterval = null;
+
+        buttons.forEach(button => {
+            button.addEventListener('click', async () => {
+                if (requestPending) return;
+
+                const duration = parseInt(button.getAttribute('data-duration'), 10);
+                if (!duration) return;
+
+                console.log(`Solicitando extensão de ${duration} minutos...`);
+                setLoadingState(true, true);
+                statusMessageEl.textContent = 'Enviando solicitação...';
+                statusMessageEl.className = 'status-message status-pending';
+
+                try {
+                    if (!window.electronAPI || typeof window.electronAPI.requestTimeExtension !== 'function') {
+                        throw new Error('API do Electron não está disponível.');
+                    }
+                    const result = await window.electronAPI.requestTimeExtension(duration);
+                    if (result.success) {
+                        statusMessageEl.textContent = 'Solicitação enviada! Aguardando aprovação...';
+                        statusMessageEl.className = 'status-message status-info';
+                        requestPending = true;
+                        setLoadingState(true, false); // Mantém botões desabilitados, esconde spinner
+                        startApprovalCheck();
+                    } else {
+                        statusMessageEl.textContent = `Erro: ${result.message || 'Não foi possível enviar.'}`;
+                        statusMessageEl.className = 'status-message status-error';
+                        setLoadingState(false, false);
+                    }
+                } catch (error) {
+                    console.error('Erro ao chamar requestTimeExtension:', error);
+                    statusMessageEl.textContent = `Erro: ${error.message || 'Falha de comunicação.'}`;
+                    statusMessageEl.className = 'status-message status-error';
+                    setLoadingState(false, false);
+                }
+            });
+        });
+
+        function setLoadingState(isLoading, showSpinner = false) {
+            buttons.forEach(button => button.disabled = isLoading);
+            spinnerEl.classList.toggle('visible', showSpinner);
+        }
+
+         if (window.electronAPI && typeof window.electronAPI.onRequestRejected === 'function') {
+             window.electronAPI.onRequestRejected(() => {
+                 console.log('Recebido evento request-rejected');
+                 statusMessageEl.textContent = 'Sua solicitação foi rejeitada.';
+                 statusMessageEl.className = 'status-message status-error';
+                 requestPending = false;
+                 setLoadingState(false, false);
+                 stopApprovalCheck();
+             });
+         } else {
+             console.warn('API para ouvir rejeições (onRequestRejected) não encontrada no preload.');
+         }
+
+         function startApprovalCheck() {
+             stopApprovalCheck();
+             approvalCheckInterval = setInterval(() => {
+                 if (typeof window.electronAPI === 'undefined') {
+                     console.log("Janela fechada (detectado pela ausência da API). Limpando intervalo.");
+                     stopApprovalCheck();
+                 }
+             }, 1000);
+         }
+
+         function stopApprovalCheck() {
+             if (approvalCheckInterval) {
+                 clearInterval(approvalCheckInterval);
+                 approvalCheckInterval = null;
+             }
+         }
+          window.addEventListener('beforeunload', stopApprovalCheck);
+    </script>
+</body>
+</html>
