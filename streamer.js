@@ -7,7 +7,8 @@ const { createClient } = supabase;
 
 // --- Configuração WebRTC (AGORA É DINÂMICA) ---
 const METERED_DOMAIN = 'estudiomj.metered.live';
-const METERED_SECRET_KEY = 'CiuVNOt9HCxC8KufDWWi-2DWMILk-_tZyzE9XXHj7zX-T-iw';
+// CORREÇÃO: Esta é a 'apiKey' da credencial, não a 'secretKey' da conta
+const METERED_CREDENTIAL_API_KEY = '332adb7b0fd78cc20c6addea17bc43ec4733';
 
 /**
  * Busca a configuração de ICE (STUN + TURN) dinamicamente do Metered.live
@@ -17,12 +18,8 @@ async function getDynamicRtcConfig() {
   console.log('[STREAMER][METERED] Buscando configuração ICE da API do Metered.live...');
   try {
     
-    // 
-    // CORREÇÃO: Usando 'POST' e a URL no 'singular' (/credential)
-    //
-    const response = await fetch(`https://${METERED_DOMAIN}/api/v1/turn/credential?secretKey=${METERED_SECRET_KEY}`, {
-      method: 'POST'
-    });
+    // CORREÇÃO FINAL: URL no plural (/credentials) e parâmetro (apiKey)
+    const response = await fetch(`https://${METERED_DOMAIN}/api/v1/turn/credentials?apiKey=${METERED_CREDENTIAL_API_KEY}`);
     
     if (!response.ok) {
       throw new Error(`[STREAMER][METERED] Falha ao buscar credenciais: ${response.status} ${response.statusText}`);
@@ -34,13 +31,9 @@ async function getDynamicRtcConfig() {
       throw new Error('[STREAMER][METERED] API não retornou servidores ICE.');
     }
     
-    // Adiciona o STUN do Google como fallback
+    // CORREÇÃO: A resposta do Metered já inclui STUN, então usamos ela diretamente.
     const config = {
-      iceServers: [
-        ...iceServers,
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-      ]
+      iceServers: iceServers
     };
     
     console.log('[STREAMER][METERED] Configuração ICE (TURN) obtida com sucesso.');
@@ -49,6 +42,7 @@ async function getDynamicRtcConfig() {
   } catch (error) {
     console.error(error);
     console.warn('[STREAMER][METERED] FALHA. Usando apenas STUN como fallback.');
+    // Fallback apenas com STUN do Google se a API falhar
     return {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -312,7 +306,8 @@ async function handleIceCandidateFromSupabase(payload) {
 function handleStopStreamFromSupabase(payload) {
   console.log('[STREAMER][STREAM] ----> handleStopStreamFromSupabase INICIADO <----');
   console.log(`[STREAMER][STREAM] Comando Stop recebido do Admin: ${payload.adminId}`);
-  stopStreaming(); // Para o stream e limpa tudo
+  // CORREÇÃO: Passa 'true' para manter o canal do Supabase vivo
+  stopStreaming(true); 
 }
 
 /**
@@ -327,6 +322,8 @@ async function createRTCPeerConnection(config) {
   console.log('[STREAMER][STREAM] Criando RTCPeerConnection...');
   
   try {
+    // CORREÇÃO: Removido 'iceTransportPolicy: "relay"'
+    console.log('[STREAMER][STREAM][ICE] Criando PeerConnection com config:', JSON.stringify(config));
     peerConnection = new RTCPeerConnection(config); // Usa a config dinâmica
     console.log('[STREAMER][STREAM][ICE] RTCPeerConnection criado com sucesso.');
   } catch (error) {
